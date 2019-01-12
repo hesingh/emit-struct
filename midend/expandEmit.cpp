@@ -19,6 +19,18 @@ limitations under the License.
 
 namespace P4 {
 
+static const IR::Type_Struct* isNestedStruct(const P4::TypeMap* typeMap,
+                                             const IR::Type* type) {
+    if (auto st = type->to<IR::Type_Struct>()) {
+        for (auto f : st->fields) {
+            auto ft = typeMap->getType(f, true);
+            if (ft->is<IR::Type_Struct>())
+                return st;
+        }
+    }
+    return nullptr;
+}
+
 bool DoExpandEmit::expandArg(
     const IR::Type* type, const IR::Argument* arg,
     std::vector<const IR::Argument*> *result, std::vector<const IR::Type*> *resultTypes) {
@@ -46,9 +58,21 @@ bool DoExpandEmit::expandArg(
         }
         return true;
     } else {
+        // If one adds a bits check here and returns false, the emit
+        // emit disappears from the MidEndLast.  With return true;
+        // emit has this form: b.emit<str>({h._s_a0,h._s_b1});
         BUG_CHECK(type->is<IR::Type_StructLike>(),
-                  "%1%: expected a struct or header_union type", type);
+                  "%1% %2%: expected a struct or header_union type", type,
+                  arg->expression);
         auto strct = type->to<IR::Type_StructLike>();
+        if (strct == nullptr) return true;
+
+        if ((strct != nullptr) && !isNestedStruct(typeMap, type)) {
+            result->push_back(arg);
+            resultTypes->push_back(type);
+            return false;
+        }
+
         for (auto f : strct->fields) {
             auto expr = new IR::Argument(
                 arg->srcInfo, arg->name, new IR::Member(arg->expression, f->name));

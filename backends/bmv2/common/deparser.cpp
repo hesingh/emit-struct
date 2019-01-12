@@ -59,8 +59,8 @@ void DeparserConverter::convertDeparserBody(const IR::Vector<IR::StatOrDecl>* bo
                             auto val = j->to<Util::JsonObject>()->get("value");
                             result->append(val);
                         } else {
-                            ::error("%1%: emit only supports header and stack arguments, not %2%",
-                                    arg, type);
+                            ::error("bmv2 , %1%: emit only supports header and "
+                                    "stack arguments, not %2%", arg, type);
                         }
                     }
                     continue;

@@ -2736,8 +2736,20 @@ bool TypeInference::onlyBitsOrBitStructs(const IR::Type* type) const {
 }
 
 void TypeInference::checkEmitType(const IR::Expression* emit, const IR::Type* type) const {
+#if 1
+    auto arg0 = emit->to<IR::MethodCallExpression>()->arguments->at(0);
+    auto mem = arg0->expression->to<IR::Member>();
+    if ((mem == nullptr) || (mem->expr == nullptr)) { return; }
+    auto t = typeMap->getType(mem->expr, true);
+    auto tt = typeMap->getType(mem, true);
+    if ((t && t->is<IR::Type_Header>()) && (tt && tt->is<IR::Type_Struct>())) {
+        std::cout << "EMIT path has header with struct: " << mem->expr << mem << "\n";
+        return;
+    }
+#endif
+
     if (type->is<IR::Type_Header>() || type->is<IR::Type_Stack>() ||
-        type->is<IR::Type_HeaderUnion>())
+        type->is<IR::Type_HeaderUnion>() || type->is<IR::Type_Bits>())
         return;
 
     if (type->is<IR::Type_Struct>()) {
